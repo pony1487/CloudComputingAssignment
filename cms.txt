@@ -1,0 +1,123 @@
+from flask import Flask, Response, render_template, request
+import json
+from subprocess import Popen, PIPE
+import os
+from tempfile import mkdtemp
+from werkzeug import secure_filename
+import sys
+app = Flask(__name__)
+
+
+
+def docker(*args):
+    cmd = ['docker']
+    for sub in args:
+        cmd.append(sub)
+    process = Popen(cmd, stdout=PIPE, stderr=PIPE)
+    stdout, stderr = process.communicate()
+   # if stderr.startswith('Error'):
+   #     print('Error: {0} -> {1}'.format(' '.join(cmd), stderr))
+    return stderr + stdout
+
+
+def index():
+    print("Available API endpoints:")
+    print("GET /containers                     List all containers")
+    print("GET /containers?state=running      List running containers (only)")
+    print("GET /containers/<id>                Inspect a specific container")
+    print("GET /containers/<id>/logs           Dump specific container logs")
+    print("GET /images                         List all images")
+    print("POST /images                        Create a new image")
+    print("POST /containers                    Create a new container")
+    print("PATCH /containers/<id>              Change a container's state")
+    print("PATCH /images/<id>                  Change a specific image's attributes")
+    print("DELETE /containers/<id>             Delete a specific container")
+    print("DELETE /containers                  Delete all containers (including running)")
+    print("DELETE /images/<id>                 Delete a specific image")
+    print("DELETE /images                      Delete all images")
+
+
+def containers_index():
+    print("contaner index called")
+    output = docker('ps')
+    print(output)
+
+def images_index():
+    print("images_index called")
+    output = docker('images')
+    #the output is diagonal!!!
+    print(output)
+def containers_show(id):
+    print("cotainers_show called")
+
+def images_remove(id):
+    print("images_remove called")
+
+def containers_remove_all():
+    print("containers_remove_all called")
+
+
+def images_remove_all():
+    print("images_remove_all called")
+
+def containers_create():
+    print("containers create called")
+
+def images_create():
+    print("images_create")
+
+def containers_update(id):
+    print("containers create called")
+
+
+#get from cmd line
+if(sys.argv[1] == "/"):
+    index()
+elif(sys.argv[1] == "containers"):
+    containers_index()
+elif(sys.argv[1] == "images"):
+    images_index()
+
+
+
+#]rses the output of a Docker PS command to a python List
+# 
+def docker_ps_to_array(output):
+    all = []
+    for c in [line.split() for line in output.splitlines()[1:]]:
+        each = {}
+        each['id'] = c[0]
+        each['image'] = c[1]
+        each['name'] = c[-1]
+        each['ports'] = c[-2]
+        all.append(each)
+    return all
+
+#
+# Parses the output of a Docker logs command to a python Dictionary
+# (Key Value Pair object)
+def docker_logs_to_object(id, output):
+    logs = {}
+    logs['id'] = id
+    all = []
+    for line in output.splitlines():
+        all.append(line)
+    logs['logs'] = all
+    return logs
+
+#
+# Parses the output of a Docker image command to a python List
+# 
+def docker_images_to_array(output):
+    all = []
+    for c in [line.split() for line in output.splitlines()[1:]]:
+        each = {}
+        each['id'] = c[2]
+        each['tag'] = c[1]
+        each['name'] = c[0]
+        all.append(each)
+    return all
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0",port=8080, debug=True)
